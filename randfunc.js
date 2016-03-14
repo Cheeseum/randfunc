@@ -109,8 +109,29 @@ Node.prototype.hasChildren() = function () {
     return this.children.length > 0;
 };
 
-Node.prototype.addChildNode = function (add) {
+Node.prototype.append = function (add) {
     this.children.append(add);
+};
+
+Node.prototype.concat = function (add) {
+    this.children.concat(add);
+};
+
+// Appends each node from a given array to a leaf node recursively with a given chance
+Node.prototype.appendToLeavesWithChance = function (nodes, chance) {
+    if (this.children.length == 0) { 
+        // found a leaf node
+        for (var i=0; i < nodes.length; ++i) {
+            if (Math.random() < chance) {
+                this.append(nodes[i]);
+            }
+        }
+    } else {
+        // keep looking
+        for (var i=0; i < this.children.length; ++i) {
+            this.children[i].appendToLeavesWithChance(nodes, chance);
+        }
+    }
 };
 
 Node.prototype.getLeaves = function () {
@@ -136,41 +157,27 @@ Node.prototype.toString = function () {
 };
 
 function FunctionTree = function () {
-    this._root = null;
+    // the root node is always initialized, it serves as our F(x,y,z,...)
+    this._root = new Node();
 };
 
 FunctionTree.prototype.appendToLeavesWithChance = function (values, chance) {
-    if (this._root == null) {
-        var node = new Node()
-        node.children.append(add);
-        
-        this._root = node;
-    } 
-    
     var valueNodes = [];
     for (var i=0; i < values.length; ++i) {
         var n = new Node();
         n.value = values[i];
         valueNodes.append(n);
     }
-
-    var leaves = this._root.getLeaves();
-    for (var i=0; i < values.length; ++i) {
-        for (var j=0; j < leaves.length; ++j) {
-            if (Math.random < chance)
-                leaves[j].addChild(valueNodes[i]);
-        }
-    }
+    
+    if (this._root.children.length == 0)
+        this._root.concat(valueNodes); // first level insert
+    else
+        this._root.appendToLeavesWithChance(nodes, chance);
 };
 
 FunctionTree.prototype.toString = function () {
-    if (this.root != null)
-        return this.root.toString();
+    if (this._root != null)
+        return this._root.toString();
 };
 
 var tree = new FunctionTree()
-tree.add('x');
-tree.add('y');
-tree.add('z');
-tree.add('t');
-tree.add('u');
