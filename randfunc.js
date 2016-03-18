@@ -1,5 +1,6 @@
 var variables = ['x', 'y', 'z', 't', 'u', 'v', 'w', 'r', 's', 'θ'];
 var funcs = ['sin', 'cos', 'tan', 'sinh', 'cosh', 'arctan', 'arccos', 'ln'];
+var operators = ['+', '-', '*', '/', '^'];
 
 // Knuth Shuffle borrowed from https://github.com/coolaj86/knuth-shuffle/
 shuffle = function(array) {
@@ -22,7 +23,7 @@ shuffle = function(array) {
 }
 
 function randInt(a,b){return a+Math.floor(Math.random()*(++b-a))};
-function randChoose(arr) {return arr[randInt(0, arr.length)]};
+function randChoose(arr) {return arr[randInt(0, arr.length-1)]};
 function randChooseMany(arr, n) {return (shuffle(arr)).slice(0, n)};
 
 var compose = function () {
@@ -46,12 +47,6 @@ var exp = function (a, b) { return a + '^' + b };
 
 // literally just puts brackets around a function lol
 var ifunc = function (a, b) { return a + '(' + b + ')' };
-
-// generate a random function as a function of a given number of variables
-var randterm = function(n) {
-    var term = '';
-    var varis = randChooseMany(arr);
-};
 
 // build a function with a given number of terms
 var randfunc_nterms = function(n) {
@@ -87,7 +82,139 @@ var randfunc_set = function(variables, n) {
     }
 };
 
+// generate a random function (only one mutliplicative term) as a function of the given variables
+var randterm = function(vars) {
+    var term = '';
+    
+};
+
+
+// generate a random function with a maximum of (5) terms
+var randfunc = function(vars) {
+    var func = '';
+
+    for (var i=0; i < randInt(1, 5); ++i) {
+        var term = randterm(vars.slice(0, randInt(1, vars.length)));
+
+        if (i == 0) {
+            func = term;
+        } else {
+            func = add(func, term);
+        }
+    }
+
+    return func;
+}
+
 // oh boy
+// Expression Tree structure
+var OpNode = function() {
+    this.operator;
+
+    this.left;
+    this.right;
+
+    if (arguments[0]) this.operator = arguments[0];
+    if (arguments[1]) this.left = arguments[1];
+    if (arguments[2]) this.right = arguments[2];
+}
+
+OpNode.prototype.toString = function() {
+    return '(' + this.left + this.operator +  this.right + ')';
+}
+
+OpNode.prototype.setOperands = function(left, right) {
+    this.left = left;
+    this.right = right;
+}
+
+var ComposeOpNode = function() {
+    this.operator = 'COMPOSE';
+    
+    this.left = null;
+    this.func;
+    this.right;
+    
+    if (arguments[0]) this.func = arguments[0];
+    if (arguments[1]) this.right = arguments[1];
+}
+
+ComposeOpNode.prototype.setOperands = function(left, right) {
+    this.func = left;
+    this.right = right;
+}
+
+ComposeOpNode.prototype.toString = function() {
+    return this.func + '(' + this.right + ')';
+}
+
+var ExpressionTree = function () {
+    this.root;
+    this.exprqueue = [];
+}
+
+// add a pre-filled opnode to the expression, popping the last pair of operands
+ExpressionTree.prototype.addOperator = function(op) {
+    op.setOperands(this.exprqueue.pop(), this.exprqueue.pop());
+    this.exprqueue.push(op);
+}
+
+ExpressionTree.prototype.addOperand = function(operand) {
+    this.exprqueue.push(operand);
+}
+
+// Generates a random expression tree using the specified variables
+var randExprTree = function(vars) {
+    var tree = new ExpressionTree();
+    var exprqueue = [];
+   
+    exprqueue.push(randVarConst(vars));
+    exprqueue.push(randVarConst(vars));
+    exprqueue.push(new OpNode(randChoose(operators), exprqueue.pop(), exprqueue.pop()));
+    
+    for (var i=0; i < randInt(1, 5); ++i) {
+        switch(randInt(0, 1)) {
+            case 0: // arithmetic operation
+                exprqueue.push(randVarConst(vars));
+                exprqueue.push(randVarConst(vars));
+                exprqueue.push(new OpNode(randChoose(operators), exprqueue.pop(), exprqueue.pop()));
+                break;
+            case 1: // function composition
+                exprqueue.push(new ComposeOpNode(randChoose(funcs), exprqueue.pop()));
+                break;
+        }
+    }
+
+    while (exprqueue.length > 1) {
+        exprqueue.push(new OpNode(randChoose(operators), exprqueue.pop(), exprqueue.pop()));
+    }
+
+    return exprqueue[0];
+}
+
+var randVarConst = function(vars) {
+    if (Math.random() < 0.2) {
+        return randInt(0, 16);
+    }
+    return randChoose(vars);
+}
+
+
+// Generates a random expression node with the given vars and pushes it to the specified tree
+var randExprNode = function(tree, vars) {
+    switch(randInt(0, 1)) {
+        case 0: // arithmetic operation
+            tree.addOperand(randVarConst(vars));
+            tree.addOperand(randVarConst(vars));
+            tree.addOperator(new OpNode(randChoose(operators)));
+            break;
+        case 1: // function composition
+            tree.addOperand(randChoose(funcs));
+            tree.addOperator(new ComposeOpNode());
+            break;
+    }
+}
+
 // The function/dependency tree structure
 
 // Node: nodes in the function tree
@@ -113,30 +240,43 @@ Node.prototype.concat = function (add) {
 };
 
 // Appends each node from a given array to a leaf node recursively with a given chance
+// FIXME: sometimes a node (value) will be missed and never added to the tree since it's random
 Node.prototype.appendToLeavesWithChance = function (nodes, chance, visited) {
     if (visited.indexOf(this) != -1) {
         // already visited this node
         return;
     }
 
+    visited.push(this);
     if (this.children.length == 0) {
         // found an unvisited leaf node
-        visited.push(this);
-
         for (var i=0; i < nodes.length; ++i) {
             if (Math.random() < chance) {
-                // sometimes a node gets appended to itself??? 
                 this.children.push(nodes[i]);
             }
         }
-    } else { // FIXME: check for nodes NOT children of this node already, maybe make a shallow copy of children and then do it? Is this.children updating when we append?
+    } else { 
         // keep looking
-        var chi = this.children.slice();
-        for (var i=0; i < chi.length; ++i) {
-            chi[i].appendToLeavesWithChance(nodes, chance, visited);
+        for (var i=0; i < this.children.length; ++i) {
+            this.children[i].appendToLeavesWithChance(nodes, chance, visited);
         }
     }
 };
+
+Node.prototype.constructFunctions = function (visited) {
+    if (visited.indexOf(this) != -1) {
+        // already visited this node 
+        return;
+    }
+
+    visited.push(this);
+    var cvars = [];
+    for (var i=0; i < this.children.length; ++i) {
+        cvars.push(this.children[i].value);
+    }
+
+    this.func = randfunc(cvars);
+}
 
 Node.prototype.getLeaves = function () {
     if (this.children.length > 0) {
