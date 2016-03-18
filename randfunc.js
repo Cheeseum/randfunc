@@ -1,4 +1,4 @@
-var variables = ['x', 'y', 'z', 't', 'u', 'v', 'w', 'r', 's', 'θ'];
+var variables = ['x', 'y', 'z', 't', 'u', 'v', 'w', 'r', 's'];
 var funcs = ['sin', 'cos', 'tan', 'sinh', 'cosh', 'arctan', 'arccos', 'ln'];
 var operators = ['+', '-', '*', '/', '^'];
 
@@ -164,8 +164,7 @@ ExpressionTree.prototype.addOperand = function(operand) {
 }
 
 // Generates a random expression tree using the specified variables
-var randExprTree = function(vars) {
-    var tree = new ExpressionTree();
+var randExpr = function(vars) {
     var exprqueue = [];
    
     exprqueue.push(randVarConst(vars));
@@ -189,7 +188,7 @@ var randExprTree = function(vars) {
         exprqueue.push(new OpNode(randChoose(operators), exprqueue.pop(), exprqueue.pop()));
     }
 
-    return exprqueue[0];
+    return exprqueue[0].toString();
 }
 
 var randVarConst = function(vars) {
@@ -273,9 +272,13 @@ Node.prototype.constructFunctions = function (visited) {
     var cvars = [];
     for (var i=0; i < this.children.length; ++i) {
         cvars.push(this.children[i].value);
+        
+        // recurse for each child
+        this.children[i].constructFunctions(visited);
     }
 
-    this.func = randfunc(cvars);
+    // skip leaf nodes
+    if (this.hasChildren()) this.func = randExpr(cvars);
 }
 
 Node.prototype.getLeaves = function () {
@@ -314,13 +317,17 @@ FunctionTree.prototype.setVarNames = function (values) {
     this._root.value = "f(";
     for (var i=0; i < values.length; ++i) {
         if (i > 0) {
-            this._root.value += ' ,';
+            this._root.value += ', ';
         }
 
         this._root.value += values[i];
     }
 
     this._root.value += ')';
+}
+
+FunctionTree.prototype.constructFunctions = function () {
+    this._root.constructFunctions([]);
 }
 
 FunctionTree.prototype.appendToLeavesWithChance = function (values, chance) {
@@ -348,6 +355,8 @@ var main = function() {
         lvars = avars.splice(0, randInt(1, 3));
         tree.appendToLeavesWithChance(lvars, Math.random() * 0.5 + 0.5);
     }
+
+    tree.constructFunctions();
 
     console.log(tree);
 };
