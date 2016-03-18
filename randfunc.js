@@ -26,86 +26,6 @@ function randInt(a,b){return a+Math.floor(Math.random()*(++b-a))};
 function randChoose(arr) {return arr[randInt(0, arr.length-1)]};
 function randChooseMany(arr, n) {return (shuffle(arr)).slice(0, n)};
 
-var compose = function () {
-    var funcs = arguments;
-    
-    return function () {
-        var args = arguments;
-        for (var i = funcs.length; i > 0; --i) {
-            args =[funcs[i].apply(this, args)];
-        }
-        
-        return args[0];
-
-    };
-};
-
-var add = function (a, b) { return a + ' + ' +  b };
-var multiply = function (a, b) { return '' + a + b };
-var divide = function (a, b) { return a + '/' + b };
-var exp = function (a, b) { return a + '^' + b };
-
-// literally just puts brackets around a function lol
-var ifunc = function (a, b) { return a + '(' + b + ')' };
-
-// build a function with a given number of terms
-var randfunc_nterms = function(n) {
-    for (var i=0; i<n; ++i) {
-        
-    }
-};
-
-// generate a set of random functions from the given variable list with a given max dependency depth
-var randfunc_set = function(variables, n) {
-    // assoc. array of var -> f(other_vars)
-    var funcs = {};
-
-    // consumable variables to build the function set from
-    var varqueue = shuffle(variables);
-
-    // dangling references in the dependency tree get pushed here
-    var danglingqueue = [];
-    
-
-    while (vars.length > 0) {
-        // pop a random set of vars off
-        var vars = varqueue.splice(0, randInt(1, 3));
-        
-        // generate a function for each variable)
-        for (var i=0; i < vars.length; ++i) {
-            var vars2 = varqueue.splice(0, randInt(1, 3));
-
-            for (var i=0; i < vars.length; ++i) {
-                funcs[vars[i]] = randfunc(vars2);
-            }
-        }
-    }
-};
-
-// generate a random function (only one mutliplicative term) as a function of the given variables
-var randterm = function(vars) {
-    var term = '';
-    
-};
-
-
-// generate a random function with a maximum of (5) terms
-var randfunc = function(vars) {
-    var func = '';
-
-    for (var i=0; i < randInt(1, 5); ++i) {
-        var term = randterm(vars.slice(0, randInt(1, vars.length)));
-
-        if (i == 0) {
-            func = term;
-        } else {
-            func = add(func, term);
-        }
-    }
-
-    return func;
-}
-
 // oh boy
 // Expression Tree structure
 var OpNode = function() {
@@ -146,21 +66,6 @@ ComposeOpNode.prototype.setOperands = function(left, right) {
 
 ComposeOpNode.prototype.toString = function() {
     return this.func + '(' + this.right + ')';
-}
-
-var ExpressionTree = function () {
-    this.root;
-    this.exprqueue = [];
-}
-
-// add a pre-filled opnode to the expression, popping the last pair of operands
-ExpressionTree.prototype.addOperator = function(op) {
-    op.setOperands(this.exprqueue.pop(), this.exprqueue.pop());
-    this.exprqueue.push(op);
-}
-
-ExpressionTree.prototype.addOperand = function(operand) {
-    this.exprqueue.push(operand);
 }
 
 // Generates a random expression tree using the specified variables
