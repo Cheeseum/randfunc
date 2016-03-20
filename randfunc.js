@@ -3,7 +3,8 @@ var funcs = ['sin', 'cos', 'tan', 'sinh', 'cosh', 'arctan', 'arccos', 'ln'];
 var operators = ['+', '-', '*', '/', '^'];
 
 // Knuth Shuffle borrowed from https://github.com/coolaj86/knuth-shuffle/
-shuffle = function(array) {
+shuffle = function(iarray) {
+    var array = iarray.slice()
     var currentIndex = array.length, temporaryValue, randomIndex;
 
     // While there remain elements to shuffle...
@@ -213,6 +214,10 @@ Node.prototype.toTreeString = function (depth) {
    return s;
 };
 
+Node.prototype.toString = function () {
+    return this.value + ' = ' + this.func;
+};
+
 var FunctionTree = function () {
     // the root node is always initialized, it serves as our F(x,y,z,...)
     this._root = new Node();
@@ -250,6 +255,27 @@ FunctionTree.prototype.toString = function () {
     return this._root.toTreeString(0);
 };
 
+FunctionTree.prototype.getFunctions = function () {
+    var nodeQueue = [this._root];
+    var visited = [];
+    var funcs = [];
+
+    while (nodeQueue.length > 0) {
+        var node = nodeQueue.shift();
+
+        if (visited.indexOf(node) == -1) {
+            visited.push(node);
+            nodeQueue = nodeQueue.concat(node.children);
+            
+            if (node.hasChildren()) {
+                funcs.push(node.toString());
+            }
+        }
+    }
+
+    return funcs;
+};
+
 var tree, avars, lvars;
 var main = function() {
     tree = new FunctionTree();
@@ -263,7 +289,7 @@ var main = function() {
 
     tree.constructFunctions();
 
-    console.log(tree);
+    console.log(tree.getFunctions().join('\n'));
 };
 
 main();
