@@ -52,6 +52,8 @@ function decorateIfObject(x) {
 
 // oh boy
 // Expression Tree structure
+// FIXME: for nicer output, give each operator its own node type
+// things like division need more complex syntax to work well in latex
 var OpNode = function() {
     this.operator;
 
@@ -64,7 +66,17 @@ var OpNode = function() {
 }
 
 OpNode.prototype.toString = function() {
-    return decorateIfObject(this.left) + this.operator +  decorateIfObject(this.right);
+    // not very OOPy but it gets the job done
+    switch (this.operator) {
+        case '*':
+            return decorate(this.left) + decorate(this.right);
+        case '/':
+            return '\\frac' + decorate(this.left) + decorate(this.right);
+            break;
+        default:
+            return decorateIfObject(this.left) + this.operator +  decorateIfObject(this.right);
+            break;
+    }
 }
 
 OpNode.prototype.setOperands = function(left, right) {
@@ -89,7 +101,7 @@ ComposeOpNode.prototype.setOperands = function(left, right) {
 }
 
 ComposeOpNode.prototype.toString = function() {
-    return this.func + '(' + this.right + ')';
+    return '\\' + this.func + '(' + this.right + ')';
 }
 
 // Generates a random expression tree using the specified variables

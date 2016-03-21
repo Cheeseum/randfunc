@@ -11,5 +11,5 @@ x - y - z
            w - v
 ```
 
-At each node, an expression is generated in terms of that node's children.  
+At each node, an expression is generated in terms of that node's children utilizing expression tree methodology. 
 (eventually) uses Nerdamer to parse, algebraically simplify, and display a nice LaTeX formatted expression on screen.
