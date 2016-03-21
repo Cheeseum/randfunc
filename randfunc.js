@@ -26,6 +26,29 @@ shuffle = function(iarray) {
 function randInt(a,b){return a+Math.floor(Math.random()*(++b-a))};
 function randChoose(arr) {return arr[randInt(0, arr.length-1)]};
 function randChooseMany(arr, n) {return (shuffle(arr)).slice(0, n)};
+function peek(a) {return a[a.length-1]};
+
+function exclude(a, ex) {
+    var n = a.indexOf(ex);
+    
+    if (n == -1) {
+        return a;
+    }
+
+    var b = a.slice();
+    b.splice(n, 1);
+
+    return b;
+}
+
+function decorate(x) { return '{' + x + '}' };
+function decorateIfObject(x) {
+    if (typeof(x) == "object") {
+        return decorate(x);
+    }
+
+    return x;
+}
 
 // oh boy
 // Expression Tree structure
@@ -41,7 +64,7 @@ var OpNode = function() {
 }
 
 OpNode.prototype.toString = function() {
-    return '(' + this.left + this.operator +  this.right + ')';
+    return decorateIfObject(this.left) + this.operator +  decorateIfObject(this.right);
 }
 
 OpNode.prototype.setOperands = function(left, right) {
@@ -70,19 +93,33 @@ ComposeOpNode.prototype.toString = function() {
 }
 
 // Generates a random expression tree using the specified variables
+// FIXME: rewrite this to be a more proper algorithm and grammar
+// right now it's held together with fragile hopes and dreams
 var randExpr = function(vars) {
     var exprqueue = [];
    
-    exprqueue.push(randVarConst(vars));
-    exprqueue.push(randVarConst(vars));
+    //exprqueue.push(randVarConst(vars));
+    //exprqueue.push(randVarConst(exclude(vars, peek(exprqueue))));
+    var v = randVarConstPair(vars);
+    exprqueue.push(v[0]);
+    exprqueue.push(v[1]);
     exprqueue.push(new OpNode(randChoose(operators), exprqueue.pop(), exprqueue.pop()));
     
     for (var i=0; i < randInt(1, 5); ++i) {
         switch(randInt(0, 1)) {
             case 0: // arithmetic operation
-                exprqueue.push(randVarConst(vars));
-                exprqueue.push(randVarConst(vars));
+                //var v = randVarConst(vars);
+                //exprqueue.push(v);
+
+                var v = randVarConstPair(vars);
+                exprqueue.push(v[0]);
+                
+                if (exprqueue.length < 2 || Math.random() < 0.5) {
+                //    exprqueue.push(randVarConst(exclude(vars, peek(exprqueue))));
+                    exprqueue.push(v[1]);
+                }
                 exprqueue.push(new OpNode(randChoose(operators), exprqueue.pop(), exprqueue.pop()));
+
                 break;
             case 1: // function composition
                 exprqueue.push(new ComposeOpNode(randChoose(funcs), exprqueue.pop()));
@@ -98,10 +135,14 @@ var randExpr = function(vars) {
 }
 
 var randVarConst = function(vars) {
-    if (Math.random() < 0.2) {
-        return randInt(0, 16);
+    if (Math.random() < 0.6) {
+        return randInt(1, 16);
     }
     return randChoose(vars);
+}
+
+var randVarConstPair = function(vars) {
+    return shuffle([randInt(1, 16), randChoose(vars)]);
 }
 
 
@@ -292,4 +333,20 @@ var main = function() {
     console.log(tree.getFunctions().join('\n'));
 };
 
-main();
+var generateDisplayNewFunction = function() {
+    tree = new FunctionTree();
+    avars = shuffle(variables);
+    tree.setVarNames(avars);
+
+    while(avars.length > 0) {
+        lvars = avars.splice(0, randInt(1, 3));
+        tree.appendToLeavesWithChance(lvars, Math.random() * 0.5 + 0.5);
+    }
+
+    tree.constructFunctions();
+
+    var funcs = tree.getFunctions();
+    for (var i=0; i < funcs.length; ++i) {
+        document.getElementById('funcs').innerHTML += '$$' + funcs[i] + '$$' + '<br>';
+    }
+}
