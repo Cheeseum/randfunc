@@ -357,8 +357,11 @@ var generateDisplayNewFunction = function() {
 
     tree.constructFunctions();
 
+    var el = document.getElementById('funcs');
     var funcs = tree.getFunctions();
+
+    el.innerHTML = '';
     for (var i=0; i < funcs.length; ++i) {
-        document.getElementById('funcs').innerHTML += '$$' + funcs[i] + '$$' + '<br>';
+        el.innerHTML += '$$' + funcs[i] + '$$' + '<br>';
     }
 }
